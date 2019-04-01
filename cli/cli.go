@@ -122,10 +122,16 @@ func Main() error {
 			return err
 		}
 	case "restart":
+		if err := engine.Restart(); err != nil {
+			return err
+		}
 	case "ssh":
 	case "ip":
 	case "mount":
 		if err := ParseMounts(args, machine); err != nil {
+			return err
+		}
+		if err := engine.Mount(); err != nil {
 			return err
 		}
 	case "delete":
