@@ -7,11 +7,10 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/cbednarski/lovm/cli"
-	"github.com/cbednarski/lovm/lovm"
+	"github.com/cbednarski/lovm/vm"
 	"github.com/cbednarski/lovm/vmware"
 )
 
@@ -44,10 +43,10 @@ func wrappedMain() error {
 
 	command, args := cli.ParseArgs(os.Args)
 
-	machine := &lovm.VirtualMachine{}
+	machine := &vm.VirtualMachine{}
 
 	// TODO Add some error handling if the file exists but we can't read it
-	if t, err := lovm.VirtualMachineFromFile(pwd); err == nil {
+	if t, err := vm.VirtualMachineFromFile(pwd); err == nil {
 		machine = t
 	}
 
@@ -70,8 +69,12 @@ func wrappedMain() error {
 		if err := engine.Start(); err != nil {
 			return err
 		}
-		log.Printf("machine %q running (%s)\n", machine.Path, machine.Engine)
+		fmt.Printf("machine %q running (%s)\n", machine.Path, machine.Engine)
 	case "stop":
+		if err := engine.Stop(); err != nil {
+			return err
+		}
+
 	case "restart":
 	case "ssh":
 	case "ip":
@@ -87,7 +90,7 @@ func wrappedMain() error {
 	// If the command ran successfully we'll save and update the lovm file. If
 	// there was an error we'll abort before we get here and leave it alone.
 	if err := machine.Save(pwd); err != nil {
-		return fmt.Errorf("error writing changes to %s: %s", lovm.LovmFile, err)
+		return fmt.Errorf("error writing changes to %s: %s", vm.MachineFile, err)
 	}
 
 	return nil

@@ -5,6 +5,9 @@ you prefer. `lovm` is a minimalist command-line utility for managing local VMs
 running in VMware. My goal is to satisfy the **minimum** requirements for
 day-to-day use.
 
+`lovm` controls the machine, not the OS. "Stop" means **stop now**, not "Please
+kindly shut down when you feel like it."
+
 `lovm` is *extremely* fast and lightweight. How fast?
 
 ```
@@ -18,12 +21,13 @@ Sat Mar 30 21:33:39 PDT 2019
 
 That's about **4 seconds to clone and start a VM.**
 
-## Roadmap
+## Goals
 
 - [x] I want a linked clone, not a full clone, to optimize for speed and storage
 - [ ] I want shared folders to be re-enabled each time I restart the VM
 - [ ] I want to know what the IP address of the VM is so I can SSH to it
-- [ ] I want things to *just work* so I don't have to waste time
+- [ ] I want things to *just work* so I don't have to waste time retyping
+      commands or figuring out workarounds
 - [ ] Simple is better
 
 ## Commands
@@ -41,6 +45,7 @@ That's about **4 seconds to clone and start a VM.**
 
 ### Operating Systems
 
+- [ ] FreeBSD
 - [x] Linux
 - [ ] MacOS
 - [ ] Windows
@@ -53,10 +58,12 @@ That's about **4 seconds to clone and start a VM.**
 - [ ] Parallels
 - [ ] qemu/kvm
 - [ ] VirtualBox
-- [ ] VMware Player / Fusion
-- [x] VMware Workstation Pro / Fusion Pro
+- [x] VMware
 - [ ] xhyve
 
+**Note:** Linked clones are only supported on VMware Workstation Pro and VMware
+Fusion Pro, so this tool will not work with Fusion / Player / ESXi.
+
 If you are looking for a virtual machine tool that has more features and better
-cross-platform support, check out [Vagrant](https://vagrantup.com) which
-supports all of the above platforms.
+support for other operating systems and virtualization platforms, check out
+[Vagrant](https://vagrantup.com) which supports all of the above platforms.
