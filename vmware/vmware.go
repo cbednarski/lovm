@@ -27,17 +27,26 @@ func New(vm *vm.VirtualMachine) *VMware {
 }
 
 func (v *VMware) Clone(source string) error {
+	// Check if we have enough user input to clone something
 	if source == "" && v.VM.Source == "" {
 		return errors.New("clone a VM first")
 	}
 
-	// TODO Possible scenarios:
-	//  1. machine.lovm does not exist. User has not specified anything. Error.
-	//  2. machine.lovm does not exist. User has specified something. Continue.
-	//  3. machine.lovm exists. Path does not exist. User specified nothing. Continue.
-	//  4. machine.lovm exists. Path does not exist. User specified something. Continue.
-	//  5. machine.lovm exists. Path exists. User specified same source. Continue (no-op)
-	//  6. machine.lovm exists. Path exists. User specified different source. Error.
+	if v.Found() {
+		// If the VM is already cloned but we've been asked to clone a
+		// different source than the one we cloned, error and inform the user
+		// that they need to destroy first
+		if source != "" && source != v.VM.Source {
+			return fmt.Errorf("asked to clone from %q but vm is already cloned from %q; run destroy first", source, v.VM.Source)
+		}
+		// If the VM is already cloned and the source is the same it's a no-op
+		return nil
+	}
+
+	// If there is no user input use the same source they entered earlier
+	if source == "" {
+		source = v.VM.Source
+	}
 
 	// Make a subfolder for the VM files to live in
 	if err := os.MkdirAll(".lovm", 0755); err != nil {
@@ -82,10 +91,15 @@ func (v *VMware) Clone(source string) error {
 
 // Found will check for the presence of a vmx file
 func (v *VMware) Found() bool {
+	if v.VM.Path == "" {
+		return false
+	}
+
 	fi, err := os.Stat(v.VM.Path)
 	if err != nil {
 		return false
 	}
+
 	return fi.Mode().IsRegular()
 }
 
@@ -106,13 +120,17 @@ func (v *VMware) Start() error {
 }
 
 func (v *VMware) Stop() error {
+	// If there's no VM we don't need to do anything
+	if !v.Found() {
+		return nil
+	}
+
 	cmd := exec.Command("vmrun", "stop", v.VM.Path, "hard")
 
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
-		// If the error message says the VM is already turned off, just say
-		// we're done, no error.
+		// If the error message says the VM is already turned off, we're done
 		if bytes.Contains(out, []byte(`The virtual machine is not powered on`)) {
 			return nil
 		}
@@ -144,6 +162,11 @@ func (v *VMware) IP() (*net.IP, error) {
 }
 
 func (v *VMware) Delete() error {
+	// If there's no VM we don't need to do anything
+	if !v.Found() {
+		return nil
+	}
+
 	if err := v.Stop(); err != nil {
 		return err
 	}
@@ -154,6 +177,11 @@ func (v *VMware) Delete() error {
 
 	if err != nil {
 		log.Printf("%s", out)
+	}
+
+	// Remove the machine path because we don't have a VM anymore
+	if err == nil {
+		v.VM.Path = ""
 	}
 
 	return err

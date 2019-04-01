@@ -14,20 +14,23 @@ import (
 	"github.com/cbednarski/lovm/vmware"
 )
 
-const helpText = `LOVM
-
-  A minimalist command-line utility for managing local virtual machines
-
-Commands
+const commandText = `Commands
 
   lovm clone <source>                   Clone a VM. Start here!
   lovm start                            Start the VM
   lovm stop                             Stop the VM
-  lovm restart                          Restart, or poweroff/poweron the VM
+  lovm restart                          Stop / start the VM
   lovm ssh                              Open an SSH session to the VM
   lovm ip                               Write the VM's IP address to stdout
   lovm mount <host path> <guest path>   Mount a host folder into the VM
+  lovm delete                           Delete the VM
+`
 
+const helpText = `LOVM
+
+  A minimalist command-line utility for managing local virtual machines
+
+`+commandText+`
 Misc
 
   Copyright: 2019 Chris Bednarski
@@ -55,6 +58,10 @@ func wrappedMain() error {
 
 	// TODO Implement the rest of the CLI
 	switch command {
+	case "-h":
+		fallthrough
+	case "--help":
+		fallthrough
 	case "help":
 		fmt.Print(helpText)
 		return nil
@@ -74,7 +81,6 @@ func wrappedMain() error {
 		if err := engine.Stop(); err != nil {
 			return err
 		}
-
 	case "restart":
 	case "ssh":
 	case "ip":
@@ -82,13 +88,19 @@ func wrappedMain() error {
 		if err := cli.ParseMounts(args, machine); err != nil {
 			return err
 		}
+	case "delete":
+		if err := engine.Delete(); err != nil {
+			return err
+		}
 	default:
-		fmt.Print(helpText)
+		fmt.Printf("Unknown command %q\n\n", command)
+		fmt.Print(commandText)
 		return nil
 	}
 
-	// If the command ran successfully we'll save and update the lovm file. If
-	// there was an error we'll abort before we get here and leave it alone.
+	// If the command ran successfully we'll save and update the machine file.
+	// If there was an error earlier we should have aborted already and we'll
+	// leave the machine file alone.
 	if err := machine.Save(pwd); err != nil {
 		return fmt.Errorf("error writing changes to %s: %s", vm.MachineFile, err)
 	}

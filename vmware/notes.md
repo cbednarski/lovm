@@ -13,3 +13,9 @@ trying to delete VM that is running
 $ vmrun deleteVM .lovm/epic/epic.vmx
 Error: The virtual machine should not be powered on. It is already running.
 ```
+
+trying to delete VM that does not exist
+```
+$ vmrun deleteVM .lovm/epic/epic.vmx
+Error: Cannot open VM: /home/cbednarski/code/epic/.lovm/epic/epic.vmx, The virtual machine cannot be found
+```

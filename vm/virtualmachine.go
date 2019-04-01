@@ -77,6 +77,9 @@ type VirtualizationEngine interface {
 	// machine is started or rebooted. The user doesn't need to know this. Just
 	// mount the thing.
 	Mount() error
+
+	// Found returns true if the VM already exists
+	Found() bool
 }
 
 // VirtualMachineFromFile looks for a file called "machine.lovm" in the
