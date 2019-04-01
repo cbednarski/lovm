@@ -63,11 +63,12 @@ const CommandHelp = `Commands
   lovm ip                               Write the VM's IP address to stdout
   lovm mount <host path> <guest path>   Mount a host folder into the VM
   lovm delete                           Delete the VM
+  lovm help                             Show help
 `
 
 const ProgramHelp = `LOVM
 
-  A minimalist command-line utility for managing local virtual machines
+  A minimalist, idempotent command-line tool for managing local virtual machines
 
 `+ CommandHelp +`
 Misc

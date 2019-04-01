@@ -1,8 +1,8 @@
 # LOVM
 
 **Lo**ve your **v**irtual **m**achines. Or **l**ow key **vm** **m**anager, if
-you prefer. `lovm` is a minimalist command-line utility for managing local VMs
-running in VMware. My goal is to satisfy the **minimum** requirements for
+you prefer. `lovm` is a minimalist, idempotent command-line tool for managing
+local virtual machines. My goal is to satisfy the **minimum** requirements for
 day-to-day use.
 
 `lovm` controls the machine, not the OS. "Stop" means **stop now**, not "Please
@@ -26,9 +26,15 @@ That's about **4 seconds to clone and start a VM.**
 - [x] I want a linked clone, not a full clone, to optimize for speed and storage
 - [ ] I want shared folders to be re-enabled each time I restart the VM
 - [ ] I want to know what the IP address of the VM is so I can SSH to it
-- [ ] I want things to *just work* so I don't have to waste time retyping
+- [x] I want things to *just work* so I don't have to waste time retyping
       commands or figuring out workarounds
 - [ ] Simple is better
+
+## Installing
+
+With [go](https://golang.org/dl/):
+
+    go install github.com/cbednarski.com/lovm
 
 ## Commands
 
