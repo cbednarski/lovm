@@ -3,8 +3,8 @@ package engine
 import (
 	"strings"
 
-	"github.com/cbednarski/lovm/vm"
-	"github.com/cbednarski/lovm/vmware"
+	"github.com/cbednarski/lovm/core"
+	"github.com/cbednarski/lovm/engine/vmware"
 )
 
 const (
@@ -23,7 +23,7 @@ func Identify(source string) string {
 
 // Engine returns an implementation of lovm.VirtualizationEngine based on the
 // type of engine determined by Identify
-func Engine(machine *vm.VirtualMachine) vm.VirtualizationEngine {
+func Engine(machine *core.MachineConfig) core.VirtualizationEngine {
 	switch Identify(machine.Source) {
 	case VMware:
 		return vmware.New(machine)

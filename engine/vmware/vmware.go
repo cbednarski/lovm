@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cbednarski/lovm/vm"
+	"github.com/cbednarski/lovm/core"
 )
 
 const (
@@ -25,6 +25,10 @@ const (
 )
 
 var (
+	// ErrNotFound is returned when we were unable to find an IP or MAC address.
+	// This error is returned in different contexts, but should never be bubbled
+	// up. If a function indicates it may return ErrNotFound always check the
+	// error before returning it.
 	ErrNotFound        = errors.New("not found")
 	errNotImplemented  = errors.New("not implemented")
 	reGeneratedAddress = regexp.MustCompile(`(ethernet\d+)\.generatedAddress ?= ?"([0-9a-fA-F:]+)"`)
@@ -35,29 +39,36 @@ var (
 	                                        `hardware ethernet ([0-9a-f:]+);\s+`)
 )
 
-
 type VMware struct {
-	VM *vm.VirtualMachine
+	Config *core.MachineConfig
 }
 
-func New(vm *vm.VirtualMachine) *VMware {
+func New(config *core.MachineConfig) *VMware {
 	return &VMware{
-		VM: vm,
+		Config: config,
 	}
 }
 
+// Clone accepts a clone source specified by the user, and also a clone source
+// found in the config file. At least one must be present. If both are present
+// clone will attempt to reconcile the two.
+//
+// The following logic is used:
+//
+//
 func (v *VMware) Clone(source string) error {
 	// Check if we have enough user input to clone something
-	if source == "" && v.VM.Source == "" {
-		return errors.New("clone a VM first")
+	if source == "" && v.Config.Source == "" {
+		return errors.New("clone a virtual machine first")
 	}
 
 	if v.Found() {
 		// If the VM is already cloned but we've been asked to clone a
 		// different source than the one we cloned, error and inform the user
 		// that they need to destroy first
-		if source != "" && source != v.VM.Source {
-			return fmt.Errorf("asked to clone from %q but vm is already cloned from %q; run destroy first", source, v.VM.Source)
+		if source != "" && source != v.Config.Source {
+			return fmt.Errorf("asked to clone from %q but the virtual machine "+
+				"is already cloned from %q; run destroy first", source, v.Config.Source)
 		}
 		// If the VM is already cloned and the source is the same it's a no-op
 		return nil
@@ -65,7 +76,7 @@ func (v *VMware) Clone(source string) error {
 
 	// If there is no user input use the same source they entered earlier
 	if source == "" {
-		source = v.VM.Source
+		source = v.Config.Source
 	}
 
 	// Make a subfolder for the VM files to live in
@@ -104,18 +115,18 @@ func (v *VMware) Clone(source string) error {
 	}
 
 	// Set VM path to the vmx file we just created.
-	v.VM.Path = target
+	v.Config.Path = target
 
 	return err
 }
 
 // Found will check for the presence of a vmx file
 func (v *VMware) Found() bool {
-	if v.VM.Path == "" {
+	if v.Config.Path == "" {
 		return false
 	}
 
-	fi, err := os.Stat(v.VM.Path)
+	fi, err := os.Stat(v.Config.Path)
 	if err != nil {
 		return false
 	}
@@ -123,12 +134,15 @@ func (v *VMware) Found() bool {
 	return fi.Mode().IsRegular()
 }
 
+// Start will first verifies that the virtual machine has been cloned, and then
+// starts it with the nogui option. If the machine is already started it reports
+// success.
 func (v *VMware) Start() error {
 	if err := v.Clone(""); err != nil {
 		return err
 	}
 
-	cmd := exec.Command("vmrun", "start", v.VM.Path, "nogui")
+	cmd := exec.Command("vmrun", "start", v.Config.Path, "nogui")
 
 	out, err := cmd.CombinedOutput()
 
@@ -139,13 +153,15 @@ func (v *VMware) Start() error {
 	return err
 }
 
+// Stop performs a hard stop on the virtual machine. If the machine is already
+// stopped or does not exist it reports success.
 func (v *VMware) Stop() error {
 	// If there's no VM we don't need to do anything
 	if !v.Found() {
 		return nil
 	}
 
-	cmd := exec.Command("vmrun", "stop", v.VM.Path, "hard")
+	cmd := exec.Command("vmrun", "stop", v.Config.Path, "hard")
 
 	out, err := cmd.CombinedOutput()
 
@@ -161,6 +177,8 @@ func (v *VMware) Stop() error {
 	return err
 }
 
+// Restart performs a hard stop and then starts the virtual machine again. If
+// the machine is already stopped, it will be started.
 func (v *VMware) Restart() error {
 	if err := v.Stop(); err != nil {
 		return err
@@ -276,7 +294,7 @@ func (v *VMware) IP() (net.IP, error) {
 	//    not vmnet DHCP, but there may be a way to correlate the virtual
 	//    ethernet device with a host address in ifconfig / ip addr
 	//  - handle multiple IPs -- ...?
-	macs, err := ReadMACAdressesFromVMX(v.VM.Path)
+	macs, err := ReadMACAdressesFromVMX(v.Config.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -298,6 +316,8 @@ func (v *VMware) IP() (net.IP, error) {
 	return nil, ErrNotFound
 }
 
+// Delete first checks that the virtual machine is stopped, and then deletes it.
+// If the virtual machine does not exist, Delete reports success.
 func (v *VMware) Delete() error {
 	// If there's no VM we don't need to do anything
 	if !v.Found() {
@@ -308,7 +328,7 @@ func (v *VMware) Delete() error {
 		return err
 	}
 
-	cmd := exec.Command("vmrun", "deleteVM", v.VM.Path)
+	cmd := exec.Command("vmrun", "deleteVM", v.Config.Path)
 
 	out, err := cmd.CombinedOutput()
 
@@ -318,7 +338,7 @@ func (v *VMware) Delete() error {
 
 	// Remove the machine path because we don't have a VM anymore
 	if err == nil {
-		v.VM.Path = ""
+		v.Config.Path = ""
 	}
 
 	return err
@@ -331,7 +351,9 @@ func (v *VMware) Mount() error {
 	return errNotImplemented
 }
 
-
+// ReadMACAddressesFromVMX identifies both the configured interface name
+// (e.g. ethernet0) and MAC address for each network interface attached to the
+// virtual machine.
 func ReadMACAdressesFromVMX(path string) (map[string]net.HardwareAddr, error) {
 	macs := map[string]net.HardwareAddr{}
 	// example from vmx file:
@@ -355,6 +377,10 @@ func ReadMACAdressesFromVMX(path string) (map[string]net.HardwareAddr, error) {
 	return macs, nil
 }
 
+// ListDHCPVirtualNetworks inspects VMware's networking configuration to find a
+// list of virtual networks that have DHCP enabled. This includes NAT and host-
+// only networks, but not bridged networks, because DHCP for bridged interfaces
+// is managed by the host's local network instead.
 func ListDHCPVirtualNetworks() ([]int, error) {
 	// example networking config
 	//
@@ -377,7 +403,7 @@ func ListDHCPVirtualNetworks() ([]int, error) {
 	for _, match := range matches {
 		netID, err := strconv.ParseInt(match[1], 10, 0)
 		if err != nil {
-			log.Printf("Unexpected number format %q", match[1])
+			log.Printf("unexpected number format %q", match[1])
 			continue
 		}
 		networks = append(networks, int(netID))
@@ -386,6 +412,10 @@ func ListDHCPVirtualNetworks() ([]int, error) {
 	return networks, nil
 }
 
+// FindCurrentLeaseByMAC searches the specified DHCP lease table for an active
+// lease assigned to the specified MAC address, and returns the IP address.
+//
+// If no valid lease can be found, returns ErrNotFound.
 func FindCurrentLeaseByMAC(netID int, addr net.HardwareAddr) (net.IP, error) {
 	// example DHCP lease file
 	//
@@ -450,6 +480,10 @@ func FindCurrentLeaseByMAC(netID int, addr net.HardwareAddr) (net.IP, error) {
 	return nil, ErrNotFound
 }
 
+// DetectIPFromMACAddress searches the various DHCP networks managed by VMware
+// and attempts to identify an IP address leased to the specified MAC address.
+//
+// If no such IP address can be found, returns ErrNotFound.
 func DetectIPFromMACAddress(mac net.HardwareAddr) (net.IP, error) {
 	networks, err := ListDHCPVirtualNetworks()
 	if err != nil {

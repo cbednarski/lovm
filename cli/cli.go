@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/cbednarski/lovm/core"
 	"github.com/cbednarski/lovm/engine"
-	"github.com/cbednarski/lovm/vm"
-	"github.com/cbednarski/lovm/vmware"
+	"github.com/cbednarski/lovm/engine/vmware"
 )
 
 func ParseArgs(input []string) (command string, args []string) {
@@ -26,17 +26,17 @@ func ParseArgs(input []string) (command string, args []string) {
 	return
 }
 
-func ParseClone(args []string, machine *vm.VirtualMachine) error {
+func ParseClone(args []string, config *core.MachineConfig) error {
 	// We accept 0 or 1 arguments because we can use the clone source already
 	// configured in machine.lovm (if it exists). If machine.Source is null
 	// we'll complain.
 	switch len(args) {
 	case 0:
-		if machine.Source == "" {
+		if config.Source == "" {
 			return errors.New("clone source must be specified, e.g. /path/to/some.vmx")
 		}
 	case 1:
-		machine.Engine = engine.Identify(args[0])
+		config.Engine = engine.Identify(args[0])
 	default:
 		return errors.New("too many arguments")
 	}
@@ -44,7 +44,7 @@ func ParseClone(args []string, machine *vm.VirtualMachine) error {
 	return nil
 }
 
-func ParseMounts(args []string, machine *vm.VirtualMachine) error {
+func ParseMounts(args []string, machine *core.MachineConfig) error {
 	if len(args) != 2 {
 		return errors.New("expected args <host path to mount> <target path in guest>")
 	}
@@ -54,7 +54,7 @@ func ParseMounts(args []string, machine *vm.VirtualMachine) error {
 	return nil
 }
 
-func SSH(args []string, machine *vm.VirtualMachine, engine vm.VirtualizationEngine) error {
+func SSH(args []string, machine *core.MachineConfig, engine core.VirtualizationEngine) error {
 	exec.Command("ssh", "172.16.23.128")
 
 	return errors.New("not implemented")
@@ -93,15 +93,15 @@ func Main() error {
 
 	command, args := ParseArgs(os.Args)
 
-	machine := &vm.VirtualMachine{}
+	config := &core.MachineConfig{}
 
 	// TODO Add some error handling if the file exists but we can't read it
-	if t, err := vm.VirtualMachineFromFile(pwd); err == nil {
-		machine = t
+	if t, err := core.ConfigFromFile(pwd); err == nil {
+		config = t
 	}
 
 	// TODO generalize this for other virt engines (maybe)
-	engine := vmware.New(machine)
+	machine := vmware.New(config)
 
 	// TODO Implement the rest of the CLI
 	switch command {
@@ -113,44 +113,44 @@ func Main() error {
 		fmt.Print(ProgramHelp)
 		return nil
 	case "clone":
-		if err := ParseClone(args, machine); err != nil {
+		if err := ParseClone(args, config); err != nil {
 			return err
 		}
-		if err := engine.Clone(machine.Source); err != nil {
+		if err := machine.Clone(config.Source); err != nil {
 			return err
 		}
 	case "start":
-		if err := engine.Start(); err != nil {
+		if err := machine.Start(); err != nil {
 			return err
 		}
-		fmt.Printf("machine %q running (%s)\n", machine.Path, machine.Engine)
+		fmt.Printf("machine %q running (%s)\n", config.Path, config.Engine)
 	case "stop":
-		if err := engine.Stop(); err != nil {
+		if err := machine.Stop(); err != nil {
 			return err
 		}
 	case "restart":
-		if err := engine.Restart(); err != nil {
+		if err := machine.Restart(); err != nil {
 			return err
 		}
 	case "ssh":
-		if err := SSH(args, machine, engine); err != nil {
+		if err := SSH(args, config, machine); err != nil {
 			return err
 		}
 	case "ip":
-		ip, err := engine.IP()
+		ip, err := machine.IP()
 		if err != nil {
 			return err
 		}
 		fmt.Println(ip)
 	case "mount":
-		if err := ParseMounts(args, machine); err != nil {
+		if err := ParseMounts(args, config); err != nil {
 			return err
 		}
-		if err := engine.Mount(); err != nil {
+		if err := machine.Mount(); err != nil {
 			return err
 		}
 	case "delete":
-		if err := engine.Delete(); err != nil {
+		if err := machine.Delete(); err != nil {
 			return err
 		}
 	default:
@@ -162,8 +162,8 @@ func Main() error {
 	// If the command ran successfully we'll save and update the machine file.
 	// If there was an error earlier we should have aborted already and we'll
 	// leave the machine file alone.
-	if err := machine.Save(pwd); err != nil {
-		return fmt.Errorf("error writing changes to %s: %s", vm.MachineFile, err)
+	if err := config.Save(pwd); err != nil {
+		return fmt.Errorf("error writing changes to %s: %s", core.MachineFile, err)
 	}
 
 	return nil
