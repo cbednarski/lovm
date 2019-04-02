@@ -340,6 +340,10 @@ func (v *VMware) Delete() error {
 
 	out, err := cmd.CombinedOutput()
 
+	// TODO
+	//  handle "Insufficient permissions", which likely means a clone has been
+	//  made of this VM, so it cannot be deleted
+
 	if err != nil {
 		log.Printf("%s", out)
 	}
