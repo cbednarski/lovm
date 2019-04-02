@@ -95,7 +95,8 @@ func Main() error {
 
 	config := &core.MachineConfig{}
 
-	// TODO Add some error handling if the file exists but we can't read it
+	// TODO Add some error handling if the file exists but we can't read it,
+	//  which might be caused by inappropriate use of sudo
 	if t, err := core.ConfigFromFile(pwd); err == nil {
 		config = t
 	}
@@ -103,7 +104,6 @@ func Main() error {
 	// TODO generalize this for other virt engines (maybe)
 	machine := vmware.New(config)
 
-	// TODO Implement the rest of the CLI
 	switch command {
 	case "-h":
 		fallthrough
@@ -116,6 +116,10 @@ func Main() error {
 		if err := ParseClone(args, config); err != nil {
 			return err
 		}
+		// TODO we should be passing source directly from user input so it's
+		//  possible to detect when the source is changed. If we always pass
+		//  source from config instead we won't notice the difference.
+		//  machine.Clone already has implementation logic to handle this.
 		if err := machine.Clone(config.Source); err != nil {
 			return err
 		}
