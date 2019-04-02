@@ -198,7 +198,7 @@ func (v *VMware) Restart() error {
 }
 
 // IP returns the first IP address associated with the virtual machine. There
-// may be more than one. This is currently unhandled / undefined behavior.
+// may be more than one. Multiple IPs is currently unhandled / undefined behavior.
 func (v *VMware) IP() (net.IP, error) {
 	// The following networking concepts will be useful for understanding the
 	// implementation which detects the VM's IP address(es). VMware Workstation
