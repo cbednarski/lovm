@@ -55,7 +55,15 @@ func New(config *core.MachineConfig) *VMware {
 //
 // The following logic is used:
 //
+// - machine.lovm does not exist. User has not specified anything.       Error.
+// - machine.lovm does not exist. User has specified something.          Clone.
+// - machine.lovm exists. Path does not exist. User specified nothing.   Clone.
+// - machine.lovm exists. Path does not exist. User specified something. Clone.
+// - machine.lovm exists. Path exists. User specified same source.       No-op.
+// - machine.lovm exists. Path exists. User specified different source.  Error.
 //
+// After each clone operation the machine.lovm file will be updated to reflect
+// the current state of the world.
 func (v *VMware) Clone(source string) error {
 	// Check if we have enough user input to clone something
 	if source == "" && v.Config.Source == "" {
