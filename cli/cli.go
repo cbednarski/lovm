@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/cbednarski/lovm/engine"
 	"github.com/cbednarski/lovm/vm"
@@ -51,6 +52,12 @@ func ParseMounts(args []string, machine *vm.VirtualMachine) error {
 	machine.Mounts[args[0]] = args[1]
 
 	return nil
+}
+
+func SSH(args []string, machine *vm.VirtualMachine, engine vm.VirtualizationEngine) error {
+	exec.Command("ssh", "172.16.23.128")
+
+	return errors.New("not implemented")
 }
 
 const CommandHelp = `Commands
@@ -126,7 +133,15 @@ func Main() error {
 			return err
 		}
 	case "ssh":
+		if err := SSH(args, machine, engine); err != nil {
+			return err
+		}
 	case "ip":
+		ip, err := engine.IP()
+		if err != nil {
+			return err
+		}
+		fmt.Println(ip)
 	case "mount":
 		if err := ParseMounts(args, machine); err != nil {
 			return err

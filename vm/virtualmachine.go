@@ -66,7 +66,7 @@ type VirtualizationEngine interface {
 	// IP is used for SSH, or sometimes just to show the user the IP. Pick the
 	// first one because that's probably what they want. Maybe we'll get fancy
 	// later and support multiple IPs, but not now.
-	IP() (*net.IP, error)
+	IP() (net.IP, error)
 
 	// Mount shared folders. When the user runs the mount command they will add
 	// a mount to the list of mounts, so this implementation needs to figure
