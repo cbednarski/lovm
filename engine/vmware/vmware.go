@@ -21,7 +21,7 @@ import (
 const (
 	NetworkConfigFile = "/etc/vmware/networking"
 	DHCPLeasesFile    = "/etc/vmware/vmnet%d/dhcpd/dhcpd.leases"
-	DHCPDateFormat = `2006/01/02 15:04:05`
+	DHCPDateFormat    = `2006/01/02 15:04:05`
 )
 
 var (
@@ -33,10 +33,10 @@ var (
 	errNotImplemented  = errors.New("not implemented")
 	reGeneratedAddress = regexp.MustCompile(`(ethernet\d+)\.generatedAddress ?= ?"([0-9a-fA-F:]+)"`)
 	reNetworkingConfig = regexp.MustCompile(`answer VNET_(\d+)_DHCP yes`)
-	reDHCPLeases       = regexp.MustCompile(`lease ([0-9\.]+) {\s+`+
-	                                        `starts [0-9]+ ([0-9/: ]+);\s+`+
-	                                        `ends [0-9]+ ([0-9/: ]+);\s+`+
-	                                        `hardware ethernet ([0-9a-f:]+);\s+`)
+	reDHCPLeases       = regexp.MustCompile(`lease ([0-9\.]+) {\s+` +
+		`starts [0-9]+ ([0-9/: ]+);\s+` +
+		`ends [0-9]+ ([0-9/: ]+);\s+` +
+		`hardware ethernet ([0-9a-f:]+);\s+`)
 )
 
 type VMware struct {
@@ -298,10 +298,12 @@ func (v *VMware) IP() (net.IP, error) {
 
 	// TODO (currently unhandled cases)
 	//  - handle static IPs -- ReadIPAddressesFromVMX
+	//  - handle static IPs assigned in dhcpd.conf
 	//  - handle bridged networks -- these are assigned by the local network,
 	//    not vmnet DHCP, but there may be a way to correlate the virtual
 	//    ethernet device with a host address in ifconfig / ip addr
 	//  - handle multiple IPs -- ...?
+
 	macs, err := ReadMACAdressesFromVMX(v.Config.Path)
 	if err != nil {
 		return nil, err

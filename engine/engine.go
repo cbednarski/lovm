@@ -30,4 +30,3 @@ func Engine(machine *core.MachineConfig) core.VirtualizationEngine {
 	}
 	return nil
 }
-
