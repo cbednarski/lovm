@@ -14,6 +14,7 @@ import (
 func main() {
 	err := cli.Main()
 	if err != nil {
+		os.Stderr.WriteString("Error: ")
 		os.Stderr.WriteString(err.Error())
 		os.Stderr.WriteString("\n")
 		os.Exit(1)

@@ -76,7 +76,7 @@ func (v *VMware) Clone(source string) error {
 		// that they need to destroy first
 		if source != "" && source != v.Config.Source {
 			return fmt.Errorf("asked to clone from %q but the virtual machine "+
-				"is already cloned from %q; run destroy first", source, v.Config.Source)
+				"is already cloned from %q; run delete first", source, v.Config.Source)
 		}
 		// If the VM is already cloned and the source is the same it's a no-op
 		return nil
@@ -111,19 +111,41 @@ func (v *VMware) Clone(source string) error {
 	args := []string{"clone", source, target, "linked"}
 
 	if snapshot != "" {
-		args = append(args, fmt.Sprintf("-snapshot=%s", snapshot))
+		args = append(args, fmt.Sprintf(`-snapshot=%s`, snapshot))
 	}
+
+	// TODO before we clone we need to make a snapshot while the source is in a
+	//  powered-off state. So we also need to check whether the source is
+	//  powered off at the time. If we don't do this, one of two things will
+	//  happen:
+	//  1. Clone will fail because the VM we're trying to clone is powered on
+	//  2. We'll end up with a bunch of junk clones since a new one is created
+	//     each time we clone the source again. This seems to be a linked clone
+	//     issue specifically.
+	//  The simple solution is to create our own powered-off snapshot called
+	//  "lovm" and use this as the basis for the other stuff we're doing. Once
+	//  we verify the lovm snapshot exists we can do whatever we want. If the
+	//  user creates a bad one we'll just fall back on normal error handling and
+	//  tell them to fix it.
 
 	cmd := exec.Command("vmrun", args...)
 
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
+		if bytes.Contains(out, []byte(`The virtual machine should not be powered on. It is already running.`)) {
+			return errors.New("the specified snapshot is powered on and "+
+				"cannot be cloned. Please create another snapshot")
+		}
 		log.Printf("%s", out)
 	}
 
 	// Set VM path to the vmx file we just created.
 	v.Config.Path = target
+	v.Config.Source = source
+	if snapshot != "" {
+		v.Config.Source = fmt.Sprintf("%s:%s", source, snapshot)
+	}
 
 	return err
 }

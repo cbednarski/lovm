@@ -15,6 +15,12 @@ const (
 // Identify uses heuristics to determine the appropriate virtualization engine
 // for the specified source
 func Identify(source string) string {
+	// We use the : separator as a special case for indicating snapshots. This
+	// breaks the filename heuristic so we'll strip it off first.
+	if strings.Contains(source, ":") {
+		source = strings.Split(source, ":")[0]
+	}
+
 	if strings.HasSuffix(source, ".vmx") {
 		return VMware
 	}

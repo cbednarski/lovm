@@ -26,22 +26,24 @@ func ParseArgs(input []string) (command string, args []string) {
 	return
 }
 
-func ParseClone(args []string, config *core.MachineConfig) error {
+func ParseClone(args []string, config *core.MachineConfig) (string, error) {
 	// We accept 0 or 1 arguments because we can use the clone source already
 	// configured in machine.lovm (if it exists). If machine.Source is null
 	// we'll complain.
+	source := ""
 	switch len(args) {
 	case 0:
 		if config.Source == "" {
-			return errors.New("clone source must be specified, e.g. /path/to/some.vmx")
+			return source, errors.New("clone source must be specified, e.g. /path/to/some.vmx")
 		}
 	case 1:
+		source = args[0]
 		config.Engine = engine.Identify(args[0])
 	default:
-		return errors.New("too many arguments")
+		return source, errors.New("too many arguments")
 	}
 
-	return nil
+	return source, nil
 }
 
 func ParseMounts(args []string, machine *core.MachineConfig) error {
