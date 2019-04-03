@@ -1,6 +1,6 @@
 package cli
 
-const CommandHelp = `Commands
+const CommandList = `Commands
 
   lovm clone <source>                   Clone a VM. Start here!
   lovm start                            Start the VM
@@ -17,11 +17,10 @@ const ProgramHelp = `LOVM
 
   A minimalist, idempotent command-line tool for managing local virtual machines
 
-` + CommandHelp + `
+` + CommandList + `
 Misc
 
   Copyright: 2019 Chris Bednarski
   License: MIT
   Contact: https://github.com/cbednarski/lovm
 `
-

@@ -86,6 +86,12 @@ func SSH(args []string, machine core.VirtualizationEngine) error {
 	return nil
 }
 
+// Help allows you to return a nil error after showing help text
+func Help(text string) error {
+	fmt.Print(text)
+	return nil
+}
+
 func Main() error {
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -107,23 +113,19 @@ func Main() error {
 
 	switch command {
 	case "":
-		fallthrough
+		return Help(ProgramHelp)
 	case "-h":
-		fallthrough
+		return Help(ProgramHelp)
 	case "--help":
-		fallthrough
+		return Help(ProgramHelp)
 	case "help":
-		fmt.Print(ProgramHelp)
-		return nil
+
 	case "clone":
-		if err := ParseClone(args, config); err != nil {
+		source, err := ParseClone(args, config)
+		if err != nil {
 			return err
 		}
-		// TODO we should be passing source directly from user input so it's
-		//  possible to detect when the source is changed. If we always pass
-		//  source from config instead we won't notice the difference.
-		//  machine.Clone already has implementation logic to handle this.
-		if err := machine.Clone(config.Source); err != nil {
+		if err := machine.Clone(source); err != nil {
 			return err
 		}
 	case "start":
@@ -162,7 +164,7 @@ func Main() error {
 		}
 	default:
 		fmt.Printf("Unknown command %q\n\n", command)
-		fmt.Print(CommandHelp)
+		fmt.Print(CommandList)
 		return nil
 	}
 
