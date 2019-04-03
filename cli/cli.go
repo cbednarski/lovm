@@ -54,36 +54,35 @@ func ParseMounts(args []string, machine *core.MachineConfig) error {
 	return nil
 }
 
-func SSH(args []string, machine *core.MachineConfig, engine core.VirtualizationEngine) error {
-	exec.Command("ssh", "172.16.23.128")
+func SSH(args []string, machine core.VirtualizationEngine) error {
+	ip, err := machine.IP()
+	if err != nil {
+		return err
+	}
 
-	return errors.New("not implemented")
+	// Any additional arguments (-i, -l, etc.) may be passed through to the
+	// underlying ssh command, while the IP is filled in automatically
+	args = append(args, ip.String())
+
+	command := exec.Command("ssh", args...)
+
+	// Pass through stdin, stdout, and stderr to the child process
+	command.Stdin = os.Stdin
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+
+	// Fork the child process
+	if err := command.Start(); err != nil {
+		return err
+	}
+
+	// Wait for it to complete
+	if err := command.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }
-
-const CommandHelp = `Commands
-
-  lovm clone <source>                   Clone a VM. Start here!
-  lovm start                            Start the VM
-  lovm stop                             Stop the VM
-  lovm restart                          Stop / start the VM
-  lovm ssh                              Open an SSH session to the VM
-  lovm ip                               Write the VM's IP address to stdout
-  lovm mount <host path> <guest path>   Mount a host folder into the VM
-  lovm delete                           Delete the VM
-  lovm help                             Show help
-`
-
-const ProgramHelp = `LOVM
-
-  A minimalist, idempotent command-line tool for managing local virtual machines
-
-`+ CommandHelp +`
-Misc
-
-  Copyright: 2019 Chris Bednarski
-  License: MIT
-  Contact: https://github.com/cbednarski/lovm
-`
 
 func Main() error {
 	pwd, err := os.Getwd()
@@ -105,6 +104,8 @@ func Main() error {
 	machine := vmware.New(config)
 
 	switch command {
+	case "":
+		fallthrough
 	case "-h":
 		fallthrough
 	case "--help":
@@ -137,7 +138,7 @@ func Main() error {
 			return err
 		}
 	case "ssh":
-		if err := SSH(args, config, machine); err != nil {
+		if err := SSH(args, machine); err != nil {
 			return err
 		}
 	case "ip":
