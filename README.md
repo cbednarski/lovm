@@ -92,7 +92,7 @@ VirtualBox.
 
 `lovm` doesn't currently run on Windows, though it can run Windows VMs on Linux.
 I don't currently develop on Windows, but I know a lot of people do, so I may
-add Windows support later.
+add Windows host support later.
 
 > What about snapshots, multiple VMs, or \[feature X\], or \[platform Y\]?
 
