@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/cbednarski/lovm/core"
 	"github.com/cbednarski/lovm/engine"
-	"github.com/cbednarski/lovm/engine/vmware"
 )
 
 func ParseArgs(input []string) (command string, args []string) {
@@ -28,8 +28,8 @@ func ParseArgs(input []string) (command string, args []string) {
 
 func ParseClone(args []string, config *core.MachineConfig) (string, error) {
 	// We accept 0 or 1 arguments because we can use the clone source already
-	// configured in machine.lovm (if it exists). If machine.Source is null
-	// we'll complain.
+	// configured in machine.lovm (if it exists). If machine.Source is empty and
+	// there is no user input, we'll complain.
 	source := ""
 	switch len(args) {
 	case 0:
@@ -86,6 +86,22 @@ func SSH(args []string, machine core.VirtualizationEngine) error {
 	return nil
 }
 
+func ConfigFromFileOrNew(path string) (*core.MachineConfig, error) {
+	config, err := core.ConfigFromFile(path)
+	if err != nil {
+		// If the error specifically says that the file does not exist then we
+		// will simply create a new, empty config and move on, because that's
+		// what we would do anyway. If there is a different type of io error,
+		// such as we can't read the file, or there is a problem parsing the
+		// JSON, then we'll show that error to the user
+		if strings.Contains(err.Error(), "no such file or directory") {
+			return &core.MachineConfig{}, nil
+		}
+		return nil, err
+	}
+	return config, nil
+}
+
 // Help allows you to return a nil error after showing help text
 func Help(text string) error {
 	fmt.Print(text)
@@ -100,16 +116,12 @@ func Main() error {
 
 	command, args := ParseArgs(os.Args)
 
-	config := &core.MachineConfig{}
-
-	// TODO Add some error handling if the file exists but we can't read it,
-	//  which might be caused by inappropriate use of sudo
-	if t, err := core.ConfigFromFile(pwd); err == nil {
-		config = t
+	config, err := ConfigFromFileOrNew(pwd)
+	if err != nil {
+		return err
 	}
 
-	// TODO generalize this for other virt engines (maybe)
-	machine := vmware.New(config)
+	machine := engine.Engine(config.Source, config)
 
 	switch command {
 	case "":
@@ -119,11 +131,16 @@ func Main() error {
 	case "--help":
 		return Help(ProgramHelp)
 	case "help":
-
+		// TODO add interactive help command here for different commands
 	case "clone":
 		source, err := ParseClone(args, config)
 		if err != nil {
 			return err
+		}
+		// Override the engine type if there is CLI input, because the user
+		// might be cloning a different type of VM after deleting a previous one
+		if source != "" {
+			machine = engine.Engine(source, config)
 		}
 		if err := machine.Clone(source); err != nil {
 			return err
@@ -163,9 +180,8 @@ func Main() error {
 			return err
 		}
 	default:
-		fmt.Printf("Unknown command %q\n\n", command)
 		fmt.Print(CommandList)
-		return nil
+		return fmt.Errorf("unrecognized command %q", command)
 	}
 
 	// If the command ran successfully we'll save and update the machine file.

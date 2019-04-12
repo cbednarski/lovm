@@ -28,9 +28,9 @@ var (
 	// ErrNotFound is returned when we were unable to find an IP or MAC address.
 	// This error is returned in different contexts, but should never be bubbled
 	// up. If a function indicates it may return ErrNotFound always check the
-	// error before returning it.
+	// error before returning it. It does not provide enough context to the user
+	// for them to do anything about it.
 	ErrNotFound        = errors.New("not found")
-	errNotImplemented  = errors.New("not implemented")
 	reGeneratedAddress = regexp.MustCompile(`(ethernet\d+)\.generatedAddress ?= ?"([0-9a-fA-F:]+)"`)
 	reNetworkingConfig = regexp.MustCompile(`answer VNET_(\d+)_DHCP yes`)
 	reDHCPLeases       = regexp.MustCompile(`lease ([0-9\.]+) {\s+` +
@@ -75,8 +75,10 @@ func (v *VMware) Clone(source string) error {
 		// different source than the one we cloned, error and inform the user
 		// that they need to destroy first
 		if source != "" && source != v.Config.Source {
-			return fmt.Errorf("asked to clone from %q but the virtual machine "+
-				"is already cloned from %q; run delete first", source, v.Config.Source)
+			return fmt.Errorf("asked to clone from %q but the virtual "+
+				"machine is already cloned from %q; run delete first", source,
+				v.Config.Source)
+
 		}
 		// If the VM is already cloned and the source is the same it's a no-op
 		return nil
@@ -134,10 +136,10 @@ func (v *VMware) Clone(source string) error {
 
 	if err != nil {
 		if bytes.Contains(out, []byte(`The virtual machine should not be powered on. It is already running.`)) {
-			return errors.New("the specified snapshot is powered on and "+
+			return errors.New("the specified snapshot is powered on and " +
 				"cannot be cloned. Please create another snapshot")
 		}
-		log.Printf("%s", out)
+		core.CommandError(cmd, out)
 	}
 
 	// Set VM path to the vmx file we just created.
@@ -177,7 +179,7 @@ func (v *VMware) Start() error {
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
-		log.Printf("%s", out)
+		core.CommandError(cmd, out)
 	}
 
 	return err
@@ -201,7 +203,7 @@ func (v *VMware) Stop() error {
 			return nil
 		}
 
-		log.Printf("%s", out)
+		core.CommandError(cmd, out)
 	}
 
 	return err
@@ -369,7 +371,7 @@ func (v *VMware) Delete() error {
 	//  made of this VM, so it cannot be deleted
 
 	if err != nil {
-		log.Printf("%s", out)
+		core.CommandError(cmd, out)
 	}
 
 	// Remove the machine path because we don't have a VM anymore
@@ -384,7 +386,7 @@ func (v *VMware) Delete() error {
 func (v *VMware) Mount() error {
 	// TODO check guest tools status because shared folders don't work without
 	//  those
-	return errNotImplemented
+	return core.ErrNotImplemented
 }
 
 // ReadMACAddressesFromVMX identifies both the configured interface name

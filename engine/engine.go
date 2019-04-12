@@ -4,12 +4,15 @@ import (
 	"strings"
 
 	"github.com/cbednarski/lovm/core"
+	"github.com/cbednarski/lovm/engine/unknown"
+	"github.com/cbednarski/lovm/engine/virtualbox"
 	"github.com/cbednarski/lovm/engine/vmware"
 )
 
 const (
-	Unknown = "unknown"
-	VMware  = "vmware"
+	Unknown    = "unknown"
+	VMware     = "vmware"
+	VirtualBox = "virtualbox"
 )
 
 // Identify uses heuristics to determine the appropriate virtualization engine
@@ -24,15 +27,20 @@ func Identify(source string) string {
 	if strings.HasSuffix(source, ".vmx") {
 		return VMware
 	}
+	if strings.HasSuffix(source, ".vbox") {
+		return VirtualBox
+	}
 	return Unknown
 }
 
 // Engine returns an implementation of lovm.VirtualizationEngine based on the
 // type of engine determined by Identify
-func Engine(machine *core.MachineConfig) core.VirtualizationEngine {
-	switch Identify(machine.Source) {
+func Engine(source string, machine *core.MachineConfig) core.VirtualizationEngine {
+	switch Identify(source) {
 	case VMware:
 		return vmware.New(machine)
+	case VirtualBox:
+		return virtualbox.New(machine)
 	}
-	return nil
+	return unknown.New(machine)
 }

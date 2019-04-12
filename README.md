@@ -49,13 +49,6 @@ With [go](https://golang.org/dl/):
 
 ## Questions
 
-> How do I clone a snapshot?
-
-You can clone a snapshot by adding `:` and the snapshot name to the clone
-source. For example:
-
-    lovm clone /path/to/vm:snapshot-name
-
 > How do I ssh to my box?
 
 `lovm ssh` calls `ssh` with the IP address returned by `lovm ip`, but will pass
@@ -70,18 +63,36 @@ Since you can't use `user@ip` syntax to change the ssh login, use `-l` instead.
 
 Yes. `lovm` uses linked clones, which use copy-on-write to make cloning
 extremely fast. The non-Pro versions of these products do not (at time of
-writing) support linked clones.
+writing) support linked clones. You may also use VirtualBox, which is free.
 
 > How do I create my own VM?
 
-The easiest way is to use the GUI for VMware or VirtualBox. VMware even has an
-"easy install" option that will automatically install popular operating systems
-for you. You can also use a VM created using Packer, or provided by someone
-else. You can even use a Vagrant Box, though you will need to extract it first.
+There are many options. The easiest way is to use the GUI for VMware or
+VirtualBox. VMware has an "easy install" option that will automatically install
+popular operating systems for you. You can use a VM image created using Packer
+or provided by a third party. You can even use a Vagrant Box, though you will
+need to unpack it first.
 
 In order to clone the VM, the source VM must be in a powered-off state (not
 suspended), or must have a powered-off snaphot. Since the original VM is non-
 destructively cloned each time you run it, you only need to create it once.
+
+> How do I clone a snapshot?
+
+You can clone a snapshot by adding `:` and the snapshot name to the clone
+source. For example:
+
+    lovm clone /path/to/vm:snapshot-name
+
+> What is the `lovm-clone` snapshot?
+
+Linked clones in VirtualBox and VMware *require* a snapshot so `lovm` creates
+one called `lovm-clone` the first time it clones a VM. If you make changes to
+the original VM afterward, be sure to delete this snapshot so your other VMs
+will pick up the changes. You can also create this snapshot manually.
+
+Having more than one snapshot named `lovm-clone` on a single VM will result in
+unspecified behavior.
 
 > What about all the other virtualization tools, like bhyve and kvm?
 
@@ -94,7 +105,8 @@ VirtualBox.
 I don't currently develop on Windows, but I know a lot of people do, so I may
 add Windows host support later.
 
-> What about snapshots, multiple VMs, or \[feature X\], or \[platform Y\]?
+> What about managing snapshots, multiple VMs, or \[feature X\], or
+  \[platform Y\]?
 
 There are a lot of features and platforms I don't use and don't have time to
 support. Feel free to clone or fork the project for your own needs. :)
@@ -124,19 +136,19 @@ other guest operating systems and does not support power management workflows
 
 `lovm` manages VMs and does not have any docker-specific features.
 
-### `vmrun`
+### Just using VMware or VirtualBox
 
-`lovm` wraps `vmrun`, the CLI included with VMware Workstation. `lovm` saves you
-having to re-type vmx paths each time, and also quickly [finds the IP
-address][1] when you start a VM.
+`lovm` wraps the CLI tools included with VMware and VirtualBox. `lovm` improves
+on the native CLI's ergonomics, speeds things up by using linked clones, and
+also quickly [identifies the IP address][1] when you start a VM.
 
 [1]: https://www.vmware.com/support/ws55/doc/ws_net_advanced_ipaddress.html
 
 ## Contributing
 
-I built this for my own use, and I only intend to maintain these features for
-myself. Please do feel free to open bugs or PRs or ask questions, but don't feel
-bad if I don't respond or don't merge your PR. It's not you. It's me! :)
+I built this for my own use, and I only intend to maintain this program so I can
+use it. Please **do** feel free to open bugs or PRs or ask questions, but don't
+feel bad if I don't respond or don't merge your PR. It's not you. It's me! :)
 
 ## Compatibility Matrix
 
