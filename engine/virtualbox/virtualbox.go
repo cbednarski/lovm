@@ -59,17 +59,6 @@ func (v *VirtualBox) Clone(source string) error {
 		source = strings.Split(source, ":")[0]
 	}
 
-	// A snapshot is required for a linked clone in VirtualBox, so we'll create
-	// one if the user didn't specify anything.
-	if snapshot == "" {
-		// Create the clone source snapshot before we continue
-		if err := CreateSnapshot(source); err != nil {
-			return errors.New("failed to create snapshot required for cloning")
-		}
-
-		snapshot = SnapshotName
-	}
-
 	pwd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -95,7 +84,17 @@ func (v *VirtualBox) Clone(source string) error {
 	args := []string{"clonevm", source, "--options", "link",
 		"--basefolder", baseFolder, "--name", targetName, "--register"}
 
-	if snapshot != "" {
+	if snapshot == "" {
+		// A snapshot is required for a linked clone in VirtualBox, so we'll
+		// create one if the user didn't specify anything.
+		if err := CreateSnapshot(source); err != nil {
+			return errors.New("failed to create snapshot required for cloning")
+		}
+
+		// We're going to use the special snapshot but we do not write it into
+		// the config struct because the user did not explicitly specify it.
+		args = append(args, `--snapshot`, SnapshotName)
+	} else {
 		args = append(args, `--snapshot`, snapshot)
 	}
 
