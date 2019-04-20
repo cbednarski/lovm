@@ -30,9 +30,7 @@ Misc
   Contact: https://github.com/cbednarski/lovm
 `
 
-var topics = map[string]string {
-	"virtualbox": VirtualBoxHelp,
-}
+var topics = map[string]string {}
 
 func Help(args []string) error {
 	// Show help topics if nothing is specified
