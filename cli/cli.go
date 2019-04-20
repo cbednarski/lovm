@@ -102,8 +102,8 @@ func ConfigFromFileOrNew(path string) (*core.MachineConfig, error) {
 	return config, nil
 }
 
-// Help allows you to return a nil error after showing help text
-func Help(text string) error {
+// Text allows you to return a nil error after showing help text
+func Text(text string) error {
 	fmt.Print(text)
 	return nil
 }
@@ -125,13 +125,14 @@ func Main() error {
 
 	switch command {
 	case "":
-		return Help(ProgramHelp)
+		return Text(ProgramHelp)
 	case "-h":
-		return Help(ProgramHelp)
+		return Text(ProgramHelp)
 	case "--help":
-		return Help(ProgramHelp)
+		return Text(ProgramHelp)
 	case "help":
 		// TODO add interactive help command here for different commands
+		return Help(args)
 	case "clone":
 		source, err := ParseClone(args, config)
 		if err != nil {

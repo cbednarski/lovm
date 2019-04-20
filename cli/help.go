@@ -1,5 +1,10 @@
 package cli
 
+import (
+	"fmt"
+	"sort"
+)
+
 const CommandList = `Commands
 
   lovm clone <source>                   Clone a VM. Start here!
@@ -10,7 +15,7 @@ const CommandList = `Commands
   lovm ip                               Write the VM's IP address to stdout
   lovm mount <host path> <guest path>   Mount a host folder into the VM
   lovm delete                           Delete the VM
-  lovm help                             Show help
+  lovm help [topic]                     Show help
 `
 
 const ProgramHelp = `LOVM
@@ -24,3 +29,23 @@ Misc
   License: MIT
   Contact: https://github.com/cbednarski/lovm
 `
+
+var topics = map[string]string {
+	"virtualbox": VirtualBoxHelp,
+}
+
+func Help(args []string) error {
+	// Show help topics if nothing is specified
+	if len(args) == 0 {
+		fmt.Println("Help Topics\n")
+		sortedTopics := []string{}
+		for topic := range topics {
+			sortedTopics = append(sortedTopics, topic)
+		}
+		sort.Strings(sortedTopics)
+		for _, topic := range sortedTopics {
+			fmt.Println("  ", topic)
+		}
+		return nil
+	}
+}
