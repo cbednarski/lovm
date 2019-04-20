@@ -56,36 +56,6 @@ func ParseMounts(args []string, machine *core.MachineConfig) error {
 	return nil
 }
 
-func SSH(args []string, machine core.VirtualizationEngine) error {
-	ip, err := machine.IP()
-	if err != nil {
-		return err
-	}
-
-	// Any additional arguments (-i, -l, etc.) may be passed through to the
-	// underlying ssh command, while the IP is filled in automatically
-	args = append(args, ip.String())
-
-	command := exec.Command("ssh", args...)
-
-	// Pass through stdin, stdout, and stderr to the child process
-	command.Stdin = os.Stdin
-	command.Stdout = os.Stdout
-	command.Stderr = os.Stderr
-
-	// Fork the child process
-	if err := command.Start(); err != nil {
-		return err
-	}
-
-	// Wait for it to complete
-	if err := command.Wait(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func ConfigFromFileOrNew(path string) (*core.MachineConfig, error) {
 	config, err := core.ConfigFromFile(path)
 	if err != nil {
