@@ -180,6 +180,10 @@ func Main() error {
 		if err := machine.Delete(); err != nil {
 			return err
 		}
+	case "status":
+		if err := Status(machine); err != nil {
+			return err
+		}
 	default:
 		fmt.Print(CommandList)
 		return fmt.Errorf("unrecognized command %q", command)
