@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 	"sort"
+
+	"github.com/cbednarski/lovm/core"
 )
 
 const CommandList = `Commands
@@ -30,12 +32,12 @@ Misc
   Contact: https://github.com/cbednarski/lovm
 `
 
-var topics = map[string]string {}
+var topics = map[string]string{}
 
 func Help(args []string) error {
 	// Show help topics if nothing is specified
 	if len(args) == 0 {
-		fmt.Println("Help Topics\n")
+		fmt.Print("Help Topics\n\n")
 		sortedTopics := []string{}
 		for topic := range topics {
 			sortedTopics = append(sortedTopics, topic)
@@ -46,4 +48,6 @@ func Help(args []string) error {
 		}
 		return nil
 	}
+
+	return core.ErrNotImplemented
 }
