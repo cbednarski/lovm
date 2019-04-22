@@ -29,6 +29,9 @@ var (
 	// up. If a function indicates it may return ErrNotFound always check the
 	// error before returning it. It does not provide enough context to the user
 	// for them to do anything about it.
+	//
+	// TODO differentiate the various "not found" cases so there is additional
+	//  context provided to the user to allow them to fix things
 	ErrNotFound        = errors.New("not found")
 	reGeneratedAddress = regexp.MustCompile(`(ethernet\d+)\.generatedAddress ?= ?"([0-9a-fA-F:]+)"`)
 	reNetworkingConfig = regexp.MustCompile(`answer VNET_(\d+)_DHCP yes`)
