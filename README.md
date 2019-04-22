@@ -158,7 +158,7 @@ This is not a roadmap.
 
 - [ ] FreeBSD
 - [x] Linux
-- [ ] MacOS
+- [x] MacOS
 - [ ] Windows
 
 ### Virtualization Engines
@@ -168,6 +168,6 @@ This is not a roadmap.
 - [ ] HyperV
 - [ ] Parallels
 - [ ] qemu/kvm
-- [ ] VirtualBox
+- [x] VirtualBox
 - [x] VMware
 - [ ] xhyve
