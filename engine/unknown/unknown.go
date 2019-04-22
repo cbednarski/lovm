@@ -7,12 +7,18 @@ import (
 	"github.com/cbednarski/lovm/core"
 )
 
+const Identifier = "unknown"
+
 var ErrNoConfiguration = errors.New("no configuration found; you need to clone first")
 
 type Unknown struct{}
 
 func New(config *core.MachineConfig) *Unknown {
 	return &Unknown{}
+}
+
+func (u *Unknown) Type() string {
+	return Identifier
 }
 
 func (u *Unknown) Clone(source string) error {

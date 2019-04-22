@@ -13,7 +13,10 @@ import (
 	"github.com/cbednarski/lovm/core"
 )
 
-const SnapshotName = `lovm-clone`
+const (
+	Identifier   = "virtualbox"
+	SnapshotName = `lovm-clone`
+)
 
 type VirtualBox struct {
 	Config *core.MachineConfig
@@ -23,6 +26,10 @@ func New(config *core.MachineConfig) *VirtualBox {
 	return &VirtualBox{
 		Config: config,
 	}
+}
+
+func (v *VirtualBox) Type() string {
+	return Identifier
 }
 
 func (v *VirtualBox) Clone(source string) error {

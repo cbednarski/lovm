@@ -21,6 +21,7 @@ import (
 // Note: See paths* for platform-specific constants
 const (
 	DHCPDateFormat = `2006/01/02 15:04:05`
+	Identifier     = "vmware"
 )
 
 var (
@@ -49,6 +50,10 @@ func New(config *core.MachineConfig) *VMware {
 	return &VMware{
 		Config: config,
 	}
+}
+
+func (v *VMware) Type() string {
+	return Identifier
 }
 
 // Clone accepts a clone source specified by the user, and also a clone source

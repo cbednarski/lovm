@@ -8,6 +8,9 @@ import "net"
 // When implementing an engine, remember: The user told the machine to do
 // something NOW so don't wait for the guest OS to cooperate.
 type VirtualizationEngine interface {
+	// Type returns the identifier for the virtualization engine itself
+	Type() string
+
 	// Clone clones the VM. If the VM is already cloned, do nothing. If the VM
 	// is already cloned but the user has tried to change the source complain.
 	Clone(string) error
