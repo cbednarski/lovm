@@ -426,7 +426,7 @@ func ReadMACAdressesFromVMX(path string) (map[string]net.HardwareAddr, error) {
 // list of virtual networks that have DHCP enabled. This includes NAT and host-
 // only networks, but not bridged networks, because DHCP for bridged interfaces
 // is managed by the host's local network instead.
-func ListDHCPVirtualNetworks() ([]int, error) {
+func ListDHCPVirtualNetworks(path string) ([]int, error) {
 	// example networking config
 	//
 	// $ cat /etc/vmware/networking
@@ -438,7 +438,11 @@ func ListDHCPVirtualNetworks() ([]int, error) {
 	// ...
 	var networks []int
 
-	data, err := ioutil.ReadFile(NetworkConfigFile)
+	if path == "" {
+		path = NetworkConfigFile
+	}
+
+	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return networks, err
 	}
@@ -461,7 +465,11 @@ func ListDHCPVirtualNetworks() ([]int, error) {
 // lease assigned to the specified MAC address, and returns the IP address.
 //
 // If no valid lease can be found, returns ErrNotFound.
-func FindCurrentLeaseByMAC(netID int, addr net.HardwareAddr) (net.IP, error) {
+func FindCurrentLeaseByMAC(path string, netID int, addr net.HardwareAddr) (net.IP, error) {
+	if path == "" {
+		path = DHCPLeasesFile
+	}
+
 	// example DHCP lease file
 	//
 	// $ cat /etc/vmware/vmnet8/dhcpd/dhcpd.leases
@@ -475,7 +483,7 @@ func FindCurrentLeaseByMAC(netID int, addr net.HardwareAddr) (net.IP, error) {
 	// }
 	//
 	// Note: file is indented using tabs, not spaces as above
-	data, err := ioutil.ReadFile(fmt.Sprintf(DHCPLeasesFile, netID))
+	data, err := ioutil.ReadFile(fmt.Sprintf(path, netID))
 	if err != nil {
 		return nil, err
 	}
@@ -485,7 +493,19 @@ func FindCurrentLeaseByMAC(netID int, addr net.HardwareAddr) (net.IP, error) {
 	for _, match := range matches {
 		// Each match should contain a legit entry, but we need to find the one
 		// where starts < current time < ends and the MAC address matches.
-		// When we find a match we'll return immediately and stop processing.
+		// When we find any match we'll return immediately and stop processing.
+		//
+		// Note: I have seen a case where there were multiple valid leases in
+		// the lease file with different IPs. However, I also noticed that two
+		// VMs were assigned the same IP via DHCP so I think this is a bug where
+		// VMware was not tracking its own leases properly, so we'll just punt
+		// on that problem and blame VMware if it comes up.
+		//
+		// Fun fact: if two VMs on the network try to grab the same IP, one of
+		// them will win and the other will go link dead, but there's no way to
+		// control which wins. So obviously don't do that. The exciting case of
+		// Schrodinger's packets! Maybe they went somewhere. Maybe they went
+		// somewhere else. Maybe the router deleted them. You'll never know.
 		MAC, err := net.ParseMAC(match[4])
 		if err != nil {
 			continue
@@ -530,7 +550,7 @@ func FindCurrentLeaseByMAC(netID int, addr net.HardwareAddr) (net.IP, error) {
 //
 // If no such IP address can be found, returns ErrNotFound.
 func DetectIPFromMACAddress(mac net.HardwareAddr) (net.IP, error) {
-	networks, err := ListDHCPVirtualNetworks()
+	networks, err := ListDHCPVirtualNetworks("")
 	if err != nil {
 		return nil, err
 	}
