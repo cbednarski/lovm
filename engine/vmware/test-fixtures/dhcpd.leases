@@ -1,0 +1,32 @@
+# All times in this file are in UTC (GMT), not your local timezone.   This is
+# not a bug, so please don't ask about it.   There is no portable way to
+# store leases in the local timezone, so please don't request this as a
+# feature.   If this is inconvenient or confusing to you, we sincerely
+# apologize.   Seriously, though - don't ask.
+# The format of this file is documented in the dhcpd.leases(5) manual page.
+
+lease 172.16.23.130 {
+	starts 1 2019/04/22 06:24:51;
+	ends 1 2019/04/22 06:54:51;
+	hardware ethernet 00:0c:29:f7:07:f2;
+	client-hostname "centos-vmware";
+}
+lease 172.16.23.129 {
+	starts 6 2019/04/20 06:14:02;
+	ends 6 2019/04/20 06:44:02;
+	hardware ethernet 00:0c:29:ce:c0:a8;
+	client-hostname "centos-vmware";
+}
+lease 172.16.23.128 {
+	starts 2 2019/04/09 01:13:43;
+	ends 2 2019/04/09 01:43:43;
+	hardware ethernet 00:0c:29:56:7f:63;
+	uid ff:bc:9a:4a:2d:00:02:00:00:ab:11:15:39:5e:d3:35:a2:c9:00;
+	client-hostname "ubuntu";
+}
+lease 172.16.23.130 {
+	starts 1 2019/04/22 06:28:17;
+	ends 1 2019/04/22 06:58:17;
+	hardware ethernet 00:0c:29:f7:07:f2;
+	client-hostname "centos-vmware";
+}
