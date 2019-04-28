@@ -25,9 +25,10 @@ func TestInterfaces(t *testing.T) {
 
 func TestIdentify(t *testing.T) {
 	cases := map[string]string{
-		"/path/to/some.vmx":       vmware.Identifier,
-		"/path/to/some.vbox":      virtualbox.Identifier,
-		"/path/to/something.else": unknown.Identifier,
+		"/path/to/some.vmx":            vmware.Identifier,
+		"/path/to/some.vmx:snapshotID": vmware.Identifier,
+		"/path/to/some.vbox":           virtualbox.Identifier,
+		"/path/to/something.else":      unknown.Identifier,
 	}
 
 	for input, expected := range cases {

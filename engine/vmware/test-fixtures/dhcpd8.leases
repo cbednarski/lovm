@@ -24,9 +24,9 @@ lease 172.16.23.128 {
 	uid ff:bc:9a:4a:2d:00:02:00:00:ab:11:15:39:5e:d3:35:a2:c9:00;
 	client-hostname "ubuntu";
 }
-lease 172.16.23.130 {
+lease 172.16.23.131 {
 	starts 1 2019/04/22 06:28:17;
-	ends 1 2019/04/22 06:58:17;
+	ends 1 2119/04/22 06:58:17;
 	hardware ethernet 00:0c:29:f7:07:f2;
 	client-hostname "centos-vmware";
 }

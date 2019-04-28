@@ -1,0 +1,10 @@
+# All times in this file are in UTC (GMT), not your local timezone.   This is
+# not a bug, so please don't ask about it.   There is no portable way to
+# store leases in the local timezone, so please don't request this as a
+# feature.   If this is inconvenient or confusing to you, we sincerely
+# apologize.   Seriously, though - don't ask.
+# The format of this file is documented in the dhcpd.leases(5) manual page.
+
+# Note: This file is intentionally empty for the time being. See dhcpd8.leases
+# for test input. vnet1 is host-only without NAT, while vnet8 has a NAT, but
+# the lease tables should be parsed the same way.

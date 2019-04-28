@@ -30,13 +30,12 @@ var (
 	// up. If a function indicates it may return ErrNotFound always check the
 	// error before returning it. It does not provide enough context to the user
 	// for them to do anything about it.
-	//
-	// TODO differentiate the various "not found" cases so there is additional
-	//  context provided to the user to allow them to fix things
-	ErrNotFound        = errors.New("not found")
-	reGeneratedAddress = regexp.MustCompile(`(ethernet\d+)\.generatedAddress ?= ?"([0-9a-fA-F:]+)"`)
-	reNetworkingConfig = regexp.MustCompile(`answer VNET_(\d+)_DHCP yes`)
-	reDHCPLeases       = regexp.MustCompile(`lease ([0-9\.]+) {\s+` +
+	ErrLeaseNotFound     = errors.New("no active lease found")
+	ErrInterfaceNotFound = errors.New("no interface found")
+	ErrIPNotFound        = errors.New("no IP address found")
+	reGeneratedAddress   = regexp.MustCompile(`(ethernet\d+)\.generatedAddress ?= ?"([0-9a-fA-F:]+)"`)
+	reNetworkingConfig   = regexp.MustCompile(`answer VNET_(\d+)_DHCP yes`)
+	reDHCPLeases         = regexp.MustCompile(`lease ([0-9\.]+) {\s+` +
 		`starts [0-9]+ ([0-9/: ]+);\s+` +
 		`ends [0-9]+ ([0-9/: ]+);\s+` +
 		`hardware ethernet ([0-9a-f:]+);\s+`)
@@ -340,12 +339,12 @@ func (v *VMware) IP() (net.IP, error) {
 		return nil, err
 	}
 	for _, mac := range macs {
-		ip, err := DetectIPFromMACAddress(mac)
+		ip, err := DetectIPFromMACAddress(NetworkConfigFile, DHCPLeasesFile, mac)
 		switch err {
 		case nil:
 			// We found an ip. We're returning now, though there could be others
 			return ip, nil
-		case ErrNotFound:
+		case ErrIPNotFound:
 			// Could not find an ip address for this MAC, try the next one
 			continue
 		default:
@@ -354,7 +353,7 @@ func (v *VMware) IP() (net.IP, error) {
 		}
 	}
 
-	return nil, ErrNotFound
+	return nil, ErrIPNotFound
 }
 
 // Delete first checks that the virtual machine is stopped, and then deletes it.
@@ -419,6 +418,10 @@ func ReadMACAdressesFromVMX(path string) (map[string]net.HardwareAddr, error) {
 		macs[match[1]] = mac
 	}
 
+	if len(macs) == 0 {
+		return nil, ErrInterfaceNotFound
+	}
+
 	return macs, nil
 }
 
@@ -437,10 +440,6 @@ func ListDHCPVirtualNetworks(path string) ([]int, error) {
 	// answer VNET_8_DHCP yes
 	// ...
 	var networks []int
-
-	if path == "" {
-		path = NetworkConfigFile
-	}
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -464,12 +463,11 @@ func ListDHCPVirtualNetworks(path string) ([]int, error) {
 // FindCurrentLeaseByMAC searches the specified DHCP lease table for an active
 // lease assigned to the specified MAC address, and returns the IP address.
 //
+// The path argument should be a parameterized path to the DHCP leases file on
+// this system. See DHCPLeasesFile as an example.
+//
 // If no valid lease can be found, returns ErrNotFound.
 func FindCurrentLeaseByMAC(path string, netID int, addr net.HardwareAddr) (net.IP, error) {
-	if path == "" {
-		path = DHCPLeasesFile
-	}
-
 	// example DHCP lease file
 	//
 	// $ cat /etc/vmware/vmnet8/dhcpd/dhcpd.leases
@@ -542,26 +540,26 @@ func FindCurrentLeaseByMAC(path string, netID int, addr net.HardwareAddr) (net.I
 		}
 	}
 
-	return nil, ErrNotFound
+	return nil, ErrLeaseNotFound
 }
 
 // DetectIPFromMACAddress searches the various DHCP networks managed by VMware
 // and attempts to identify an IP address leased to the specified MAC address.
 //
 // If no such IP address can be found, returns ErrNotFound.
-func DetectIPFromMACAddress(mac net.HardwareAddr) (net.IP, error) {
-	networks, err := ListDHCPVirtualNetworks("")
+func DetectIPFromMACAddress(networkConfigFile string, dhcpLeasesFile string, mac net.HardwareAddr) (net.IP, error) {
+	networks, err := ListDHCPVirtualNetworks(networkConfigFile)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, network := range networks {
-		ip, err := FindCurrentLeaseByMAC(network, mac)
+		ip, err := FindCurrentLeaseByMAC(dhcpLeasesFile, network, mac)
 		switch err {
 		case nil:
 			// Yay we found the ip address!
 			return ip, nil
-		case ErrNotFound:
+		case ErrLeaseNotFound:
 			// We don't expect to find a match in every network so we'll just
 			// continue if we don't find it in this one.
 			continue
@@ -572,5 +570,5 @@ func DetectIPFromMACAddress(mac net.HardwareAddr) (net.IP, error) {
 		}
 	}
 
-	return nil, ErrNotFound
+	return nil, ErrIPNotFound
 }
