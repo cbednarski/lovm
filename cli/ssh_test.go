@@ -126,10 +126,10 @@ func TestBuildSSHCommand(t *testing.T) {
 		},
 		{
 			Args: []string{},
-			IP: net.ParseIP("192.168.1.80"),
+			IP:   net.ParseIP("192.168.1.80"),
 			Config: &core.MachineConfig{
 				SSH: core.SSHConfig{
-					Login: "root",
+					Login:          "root",
 					PrivateKeyPath: "/path/to/private/key",
 				},
 			},
@@ -137,10 +137,10 @@ func TestBuildSSHCommand(t *testing.T) {
 		},
 		{
 			Args: []string{"-l", "ubuntu", "-i", "/some/other/private/key"},
-			IP: net.ParseIP("192.168.1.80"),
+			IP:   net.ParseIP("192.168.1.80"),
 			Config: &core.MachineConfig{
 				SSH: core.SSHConfig{
-					Login: "root",
+					Login:          "root",
 					PrivateKeyPath: "/path/to/private/key",
 				},
 			},
