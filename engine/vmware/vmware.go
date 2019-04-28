@@ -334,10 +334,24 @@ func (v *VMware) IP() (net.IP, error) {
 	//    ethernet device with a host address in ifconfig / ip addr
 	//  - handle multiple IPs -- ...?
 
-	macs, err := ReadMACAdressesFromVMX(v.Config.Path)
-	if err != nil {
-		return nil, err
+	var macs map[string]net.HardwareAddr
+	var err error
+
+	// The user specified a specific network interface name in their SSH config
+	// we'll attempt to find an IP address for that one (only)
+	if v.Config.SSH.NetworkInterface != "" {
+		mac, err := FindMACAddressByName(v.Config.Path, v.Config.SSH.NetworkInterface)
+		if err != nil {
+			return nil, err
+		}
+		macs[v.Config.SSH.NetworkInterface] = mac
+	} else {
+		macs, err = ReadMACAdressesFromVMX(v.Config.Path)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	for _, mac := range macs {
 		ip, err := DetectIPFromMACAddress(NetworkConfigFile, DHCPLeasesFile, mac)
 		switch err {
@@ -423,6 +437,19 @@ func ReadMACAdressesFromVMX(path string) (map[string]net.HardwareAddr, error) {
 	}
 
 	return macs, nil
+}
+
+func FindMACAddressByName(path, name string) (net.HardwareAddr, error) {
+	macs, err := ReadMACAdressesFromVMX(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if mac, ok := macs[name]; ok {
+		return mac, nil
+	}
+
+	return nil, ErrInterfaceNotFound
 }
 
 // ListDHCPVirtualNetworks inspects VMware's networking configuration to find a

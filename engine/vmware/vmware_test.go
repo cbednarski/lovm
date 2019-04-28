@@ -129,3 +129,22 @@ func TestDetectIPFromMACAddress(t *testing.T) {
 		t.Errorf("Expected %s, found %s", expected, ip.String())
 	}
 }
+
+func TestFindMACAddressByName(t *testing.T) {
+	path := filepath.Join("test-fixtures", "centos.vmx")
+
+	mac, err := FindMACAddressByName(path, "ethernet0")
+	if err != nil {
+		t.Error(err)
+	} else {
+		expected := "00:0c:29:f7:07:f2"
+		if mac.String() != expected {
+			t.Errorf("Expected %s found %s", expected, mac.String())
+		}
+	}
+
+	_, err = FindMACAddressByName(path, "ethernet1")
+	if err != ErrInterfaceNotFound {
+		t.Errorf("Expected %s, found %s", ErrInterfaceNotFound, err)
+	}
+}

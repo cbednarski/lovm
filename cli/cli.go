@@ -129,7 +129,7 @@ func Main() error {
 			return err
 		}
 	case "ssh":
-		if err := SSH(args, machine); err != nil {
+		if err := SSH(args, machine, config); err != nil {
 			return err
 		}
 	case "ip":

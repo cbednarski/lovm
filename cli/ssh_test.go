@@ -4,6 +4,8 @@ import (
 	"net"
 	"strings"
 	"testing"
+
+	"github.com/cbednarski/lovm/core"
 )
 
 func TestIsSSHBoolFlags(t *testing.T) {
@@ -102,6 +104,7 @@ func TestBuildSSHCommand(t *testing.T) {
 	type testCase struct {
 		Args     []string
 		IP       net.IP
+		Config   *core.MachineConfig
 		Expected []string
 	}
 
@@ -121,10 +124,32 @@ func TestBuildSSHCommand(t *testing.T) {
 			IP:       net.ParseIP("192.168.1.80"),
 			Expected: []string{"ssh", "-l", "root", "192.168.1.80", "shutdown", "-h", "now"},
 		},
+		{
+			Args: []string{},
+			IP: net.ParseIP("192.168.1.80"),
+			Config: &core.MachineConfig{
+				SSH: core.SSHConfig{
+					Login: "root",
+					PrivateKeyPath: "/path/to/private/key",
+				},
+			},
+			Expected: []string{"ssh", "-l", "root", "-i", "/path/to/private/key", "192.168.1.80"},
+		},
+		{
+			Args: []string{"-l", "ubuntu", "-i", "/some/other/private/key"},
+			IP: net.ParseIP("192.168.1.80"),
+			Config: &core.MachineConfig{
+				SSH: core.SSHConfig{
+					Login: "root",
+					PrivateKeyPath: "/path/to/private/key",
+				},
+			},
+			Expected: []string{"ssh", "-l", "ubuntu", "-i", "/some/other/private/key", "192.168.1.80"},
+		},
 	}
 
 	for _, c := range cases {
-		output := BuildSSHCommand(c.Args, c.IP)
+		output := BuildSSHCommand(c.Args, c.IP, c.Config)
 		if !CompareLists(c.Expected, output.Args) {
 			t.Errorf("Expected command %v, found %v", c.Expected, output.Args)
 		}

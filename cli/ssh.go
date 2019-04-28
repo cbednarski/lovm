@@ -105,21 +105,43 @@ func SplitSSHRemoteCommands(args []string) (sshArgs []string, remoteCommands []s
 	return
 }
 
-func BuildSSHCommand(args []string, ip net.IP) *exec.Cmd {
+func BuildSSHCommand(args []string, ip net.IP, config *core.MachineConfig) *exec.Cmd {
 	sshArgs, remoteCommands := SplitSSHRemoteCommands(args)
+
+	hasLogin := false
+	hasPrivateKeyPath := false
+
+	for _, arg := range sshArgs {
+		if arg == "-l" {
+			hasLogin = true
+		}
+		if arg == "-i" {
+			hasPrivateKeyPath = true
+		}
+	}
+
+	if config != nil {
+		if config.SSH.Login != "" && !hasLogin {
+			sshArgs = append(sshArgs, "-l", config.SSH.Login)
+		}
+		if config.SSH.PrivateKeyPath != "" && !hasPrivateKeyPath {
+			sshArgs = append(sshArgs, "-i", config.SSH.PrivateKeyPath)
+		}
+	}
+
 	finalArgs := append(sshArgs, ip.String())
 	finalArgs = append(finalArgs, remoteCommands...)
 
 	return exec.Command("ssh", finalArgs...)
 }
 
-func SSH(args []string, machine core.VirtualizationEngine) error {
+func SSH(args []string, machine core.VirtualizationEngine, config *core.MachineConfig) error {
 	ip, err := machine.IP()
 	if err != nil {
 		return err
 	}
 
-	command := BuildSSHCommand(args, ip)
+	command := BuildSSHCommand(args, ip, config)
 
 	// Attach stdin, stdout, and stderr to the child process
 	command.Stdin = os.Stdin
