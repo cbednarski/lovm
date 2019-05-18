@@ -6,24 +6,12 @@ import (
 	"os"
 	"strings"
 
+	"git.stormbase.io/cbednarski/cli"
 	"github.com/cbednarski/lovm/core"
 	"github.com/cbednarski/lovm/engine"
 )
 
-func ParseArgs(input []string) (command string, args []string) {
-	// We're getting os.Args verbatim, so input[0] is always the name of the
-	// program. input[1] is the command, and everything else are arguments. If
-	// len(input) is less than 2 the user did not type a command so we'll just
-	// return here.
-	if len(input) > 1 {
-		command = input[1]
-	}
-	if len(input) > 2 {
-		args = input[2:]
-	}
-
-	return
-}
+var topics = map[string]string{}
 
 func ParseClone(args []string, config *core.MachineConfig) (string, error) {
 	// We accept 0 or 1 arguments because we can use the clone source already
@@ -71,19 +59,19 @@ func ConfigFromFileOrNew(path string) (*core.MachineConfig, error) {
 	return config, nil
 }
 
-// Text allows you to return a nil error after showing help text
-func Text(text string) error {
-	fmt.Print(text)
-	return nil
-}
+const Footer = `
+Misc
+
+  Copyright: 2019 Chris Bednarski
+  License: MIT
+  Contact: https://github.com/cbednarski/lovm
+`
 
 func Main() error {
 	pwd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-
-	command, args := ParseArgs(os.Args)
 
 	config, err := ConfigFromFileOrNew(pwd)
 	if err != nil {
@@ -92,66 +80,90 @@ func Main() error {
 
 	machine := engine.Engine(config.Source, config)
 
-	switch command {
-	case "":
-		return Text(ProgramHelp)
-	case "-h":
-		return Text(ProgramHelp)
-	case "--help":
-		return Text(ProgramHelp)
-	case "help":
-		// TODO add interactive help command here for different commands
-		return Help(args)
-	case "clone":
-		source, err := ParseClone(args, config)
-		if err != nil {
-			return err
-		}
-		// Override the engine type if there is CLI input, because the user
-		// might be cloning a different type of VM after deleting a previous one
-		if source != "" {
-			machine = engine.Engine(source, config)
-		}
-		if err := machine.Clone(source); err != nil {
-			return err
-		}
-	case "start":
-		if err := machine.Start(); err != nil {
-			return err
-		}
-		fmt.Printf("machine %q running (%s)\n", config.Path, config.Engine)
-	case "stop":
-		if err := machine.Stop(); err != nil {
-			return err
-		}
-	case "restart":
-		if err := machine.Restart(); err != nil {
-			return err
-		}
-	case "ssh":
-		if err := SSH(args, machine, config); err != nil {
-			return err
-		}
-	case "ip":
-		ip, err := machine.IP()
-		if err != nil {
-			return err
-		}
-		fmt.Println(ip)
-	case "mount":
-		if err := ParseMounts(args, config); err != nil {
-			return err
-		}
-		if err := machine.Mount(); err != nil {
-			return err
-		}
-	case "delete":
-		if err := machine.Delete(); err != nil {
-			return err
-		}
-	default:
-		fmt.Print(CommandList)
-		return fmt.Errorf("unrecognized command %q", command)
+	commands := map[string]*cli.Command{
+		"clone": {
+			Summary: "Clone a VM. Start here!",
+			Run: func(args []string) error {
+				source, err := ParseClone(args, config)
+				if err != nil {
+					return err
+				}
+				// Override the engine type if there is CLI input, because the user
+				// might be cloning a different type of VM after deleting a previous one
+				if source != "" {
+					machine = engine.Engine(source, config)
+				}
+				if err := machine.Clone(source); err != nil {
+					return err
+				}
+				return nil
+			},
+		},
+		"start": {
+			Summary: "Start the VM",
+			Run: func(args []string) error {
+				if err := machine.Start(); err != nil {
+					return err
+				}
+				fmt.Printf("machine %q running (%s)\n", config.Path, config.Engine)
+				return nil
+			},
+		},
+		"stop": {
+			Run: func(args []string) error {
+				return machine.Stop()
+			},
+		},
+		"restart": {
+			Run: func(args []string) error {
+				return machine.Restart()
+			},
+		},
+		"ssh": {
+			Run: func(args []string) error {
+				return SSH(args, machine, config)
+			},
+		},
+		"ip": {
+			Run: func(args []string) error {
+				ip, err := machine.IP()
+				if err != nil {
+					return err
+				}
+				fmt.Println(ip)
+				return nil
+			},
+		},
+		"mount": {
+			Run: func(args []string) error {
+				if err := ParseMounts(args, config); err != nil {
+					return err
+				}
+				if err := machine.Mount(); err != nil {
+					return err
+				}
+				return nil
+			},
+		},
+		"delete": {
+			Run: func(args []string) error {
+				return machine.Delete()
+			},
+		},
+
+	}
+
+	app := &cli.CLI{
+		Name: "lovm",
+		Header: "A minimalist, idempotent command-line tool for managing local virtual machines",
+		Version: "0.1.0",
+		Footer: Footer,
+		Commands: commands,
+		HelpTopics: topics,
+	}
+
+	if err := app.Run(); err != nil {
+		return err
 	}
 
 	// If the command ran successfully we'll save and update the machine file.
