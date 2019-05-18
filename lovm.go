@@ -8,16 +8,13 @@ package main
 import (
 	"os"
 
+	cli2 "git.stormbase.io/cbednarski/cli"
 	"github.com/cbednarski/lovm/cli"
 )
 
 func main() {
-	err := cli.Main()
-	if err != nil {
-		os.Stderr.WriteString("Error: ")
-		os.Stderr.WriteString(err.Error())
-		os.Stderr.WriteString("\n")
-		os.Exit(1)
+	if err := cli.Main(); err != nil {
+		cli2.ExitWithError(err)
 	}
 	os.Exit(0)
 }

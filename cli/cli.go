@@ -110,21 +110,25 @@ func Main() error {
 			},
 		},
 		"stop": {
+			Summary: "Stop the VM",
 			Run: func(args []string) error {
 				return machine.Stop()
 			},
 		},
 		"restart": {
+			Summary: "Start / stop the VM",
 			Run: func(args []string) error {
 				return machine.Restart()
 			},
 		},
 		"ssh": {
+			Summary: "Open an SSH session to the VM",
 			Run: func(args []string) error {
 				return SSH(args, machine, config)
 			},
 		},
 		"ip": {
+			Summary: "Write the VM's IP address to stdout",
 			Run: func(args []string) error {
 				ip, err := machine.IP()
 				if err != nil {
@@ -135,6 +139,7 @@ func Main() error {
 			},
 		},
 		"mount": {
+			Summary: "Mount a hold folder into the VM",
 			Run: func(args []string) error {
 				if err := ParseMounts(args, config); err != nil {
 					return err
@@ -146,20 +151,19 @@ func Main() error {
 			},
 		},
 		"delete": {
+			Summary: "Stop and delete the VM",
 			Run: func(args []string) error {
 				return machine.Delete()
 			},
 		},
-
 	}
 
 	app := &cli.CLI{
-		Name: "lovm",
-		Header: "A minimalist, idempotent command-line tool for managing local virtual machines",
-		Version: "0.1.0",
-		Footer: Footer,
+		Name:     "lovm",
+		Header:   "A minimalist, idempotent command-line tool for managing local virtual machines",
+		Version:  "0.1.0",
+		Footer:   Footer,
 		Commands: commands,
-		HelpTopics: topics,
 	}
 
 	if err := app.Run(); err != nil {
