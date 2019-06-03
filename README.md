@@ -34,7 +34,7 @@ I want to satisfy these **minimum** requirements for day-to-day use:
 
 With [go](https://golang.org/dl/):
 
-    go install github.com/cbednarski/lovm
+    go get github.com/cbednarski/lovm
 
 ## Commands
 
@@ -53,7 +53,8 @@ With [go](https://golang.org/dl/):
 
 `lovm ssh` calls `ssh` with the IP address returned by `lovm ip`, but will pass
 through any additional flags directly to the underlying `ssh` command. The SSH
-prompt is interactive, so you can also type in your password. For example:
+prompt is interactive, so you can also type in your password in response to a
+prompt. For example:
 
     lovm ssh -l root -i ~/.ssh/my_key.pem
 
@@ -88,8 +89,9 @@ source. For example:
 
 Linked clones in VirtualBox and VMware *require* a snapshot so `lovm` creates
 one called `lovm-clone` the first time it clones a VM. If you make changes to
-the original VM afterward, be sure to delete this snapshot so your other VMs
-will pick up the changes. You can also create this snapshot manually.
+the original VM afterward, be sure to delete this snapshot so the next clone
+operation will create a new snapshot with the latest change. You can also create
+this snapshot manually.
 
 Having more than one snapshot named `lovm-clone` on a single VM will result in
 unspecified behavior.
