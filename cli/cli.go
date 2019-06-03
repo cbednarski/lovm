@@ -11,8 +11,6 @@ import (
 	"github.com/cbednarski/lovm/engine"
 )
 
-var topics = map[string]string{}
-
 func ParseClone(args []string, config *core.MachineConfig) (string, error) {
 	// We accept 0 or 1 arguments because we can use the clone source already
 	// configured in machine.lovm (if it exists). If machine.Source is empty and
