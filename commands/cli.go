@@ -1,12 +1,13 @@
-package cli
+package commands
 
 import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 
-	"git.stormbase.io/cbednarski/cli"
+	"github.com/cbednarski/cli"
 	"github.com/cbednarski/lovm/core"
 	"github.com/cbednarski/lovm/engine"
 )
@@ -171,8 +172,15 @@ func Main() error {
 	// If the command ran successfully we'll save and update the machine file.
 	// If there was an error earlier we should have aborted already and we'll
 	// leave the machine file alone.
-	if err := config.Save(pwd); err != nil {
-		return fmt.Errorf("error writing changes to %s: %s", core.MachineFile, err)
+	//
+	// Also, sanity check that we're not saving an empty file. This is a bit
+	// weird but we initialize an empty config even if we're not actually going
+	// to use it (e.g. when running "help") but we don't want to litter empty
+	// files all over. I'm sure there's a cleaner way to to do this.
+	if !reflect.DeepEqual(config, &core.MachineConfig{}) {
+		if err := config.Save(pwd); err != nil {
+			return fmt.Errorf("error writing changes to %s: %s", core.MachineFile, err)
+		}
 	}
 
 	return nil
